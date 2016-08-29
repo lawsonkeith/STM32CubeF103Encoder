@@ -1,45 +1,45 @@
 /**
-  ******************************************************************************
-  * File Name          : main.c
-  * Description        : Main program body
-  ******************************************************************************
-  *
-  * COPYRIGHT(c) 2016 STMicroelectronics
-  *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : main.c
+ * Description        : Main program body
+ ******************************************************************************
+ *
+ * COPYRIGHT(c) 2016 STMicroelectronics
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *   1. Redistributions of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ *   2. Redistributions in binary form must reproduce the above copyright notice,
+ *      this list of conditions and the following disclaimer in the documentation
+ *      and/or other materials provided with the distribution.
+ *   3. Neither the name of STMicroelectronics nor the names of its contributors
+ *      may be used to endorse or promote products derived from this software
+ *      without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ ******************************************************************************
+ */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-
+#define DEADB 47  // a number not in the main array thats not too big!
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-unsigned int ADCValue;
+int ADCValue;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -62,9 +62,10 @@ static void MX_ADC1_Init(void);
 
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
-
+  int state=0,rev=0,flash_c=0,delay=0;
+  int delay_d[40] = {0,0,2,2,4,6,8,10,20,30,   40,50,60,70,80,90,100,200,DEADB,DEADB,DEADB,DEADB,200,100,90,80,70,60,50,40,   30,20,10,8,6,4,2,2,0,0};
+  int flash_d = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -74,12 +75,6 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
-
-  /*if (SysTick_Config(SystemCoreClock / 1000))
-  {
-     // Capture error
-     while (1);
-  }*/
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -91,60 +86,122 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  HAL_Delay(ADCValue/4);
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_SET );	// RD
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET ); 	// GN
+  while (1) {
+    HAL_Delay(delay);
 
-	  HAL_Delay(ADCValue/4);
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );	// RD
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET ); 	// GN
+    if(delay != DEADB)
+    {
+      if(rev) {
+        switch(state){
+        case 0:
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_RESET );  // B
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET ); // A
+          state++;
+          break;
+        case 1:
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_SET ); // A
+          state++;
+          break;
+        case 2:
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_SET );  // B
+          state++;
+          break;
+        case 3:
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET ); // A
+          state=0;
+          break;
+        }
+      }else{
+        switch(state){
+        case 0:
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_RESET );  // B
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET ); // A
+          state++;
+          break;
+        case 1:
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_3 , GPIO_PIN_SET );
+          state++;
+          break;
+        case 2:
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_2 , GPIO_PIN_SET );
+          state++;
+          break;
+        case 3:
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_3 , GPIO_PIN_RESET );
+          state=0;
+          break;
+        }
+      }//IF
 
-	  HAL_Delay(ADCValue/4);
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );	// RD
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_SET ); 	// GN
+      // LED flashing
+      flash_c++;
+      flash_d = 200-delay + 1;
+      flash_d /= 10;
+      if(rev){
+        if(flash_c >= flash_d){
+          HAL_GPIO_TogglePin( GPIOB , GPIO_PIN_4);  // RD
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET );  // GN
+          flash_c=0;
+        }
+      }else{
+        if(flash_c >= flash_d){
+            HAL_GPIO_TogglePin( GPIOB , GPIO_PIN_5);  // GN
+            HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );  // RD
+            flash_c=0;
+        }
+      }
 
-	  HAL_Delay(ADCValue/4);
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );	// RD
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET ); 	// GN
+    }else{
+      // deadband
+      HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_RESET );  // B
+      HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET ); // A
+      HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );  // RD
+      HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET );  // GN
 
+    }
 
-	  /* USER CODE BEGIN 3 */
-	  /*
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_SET ); 	// B
-	  HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_SET ); 	// A
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );	// RD
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET );	// GN
-	  HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_RESET );	// B
-	  HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_RESET ); // A
-	  */
-	  if (HAL_ADC_Start(&hadc1) != HAL_OK)
-	  {
-	      /* Start Conversation Error */
-	      // Error_Handler();
-	  }
-	  if (HAL_ADC_PollForConversion(&hadc1, 500) != HAL_OK)
-	  {
-	      /* End Of Conversion flag not set on time */
-	      // Error_Handler();
-	      ADCValue=-1;
-	  }
-	  else
-	  {
-	      /* ADC conversion completed */
-	      /*##-5- Get the converted value of regular channel ########################*/
-		  //0-4096
-	      ADCValue = HAL_ADC_GetValue(&hadc1);
-	  }
-	  HAL_ADC_Stop(&hadc1);
-  }
+    // ADC DAMPLING
+    if (HAL_ADC_Start(&hadc1) != HAL_OK)
+    {
+      /* Start Conversation Error */
+      // Error_Handler();
+    }
+    if (HAL_ADC_PollForConversion(&hadc1, 500) != HAL_OK)
+    {
+      /* End Of Conversion flag not set on time */
+      // Error_Handler();
+      ADCValue=-1;
+    }
+    else
+    {
+      /* ADC conversion completed */
+      /*##-5- Get the converted value of regular channel ########################*/
+      //0-4096
+      ADCValue = HAL_ADC_GetValue(&hadc1);
+    }
+    HAL_ADC_Stop(&hadc1);
+
+    //Condition ADC into delay array
+    ADCValue /= 100; // 0- 40
+    if(ADCValue > 19)
+      rev=0;
+    else
+      rev=1;
+    //validate
+    if(ADCValue > 39){
+      ADCValue = 39;
+    }
+    if(ADCValue < 0) {
+      ADCValue = 0;
+    }
+    delay = delay_d[ADCValue];
+  }//WHILE
   /* USER CODE END 3 */
 
 }
 
 /** System Clock Configuration
-*/
+ */
 void SystemClock_Config(void)
 {
 
@@ -183,8 +240,8 @@ void MX_ADC1_Init(void)
 
   ADC_ChannelConfTypeDef sConfig;
 
-    /**Common config 
-    */
+  /**Common config
+   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
@@ -194,8 +251,8 @@ void MX_ADC1_Init(void)
   hadc1.Init.NbrOfConversion = 1;
   HAL_ADC_Init(&hadc1);
 
-    /**Configure Regular Channel 
-    */
+  /**Configure Regular Channel
+   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
@@ -204,12 +261,12 @@ void MX_ADC1_Init(void)
 }
 
 /** Configure pins as 
-        * Analog 
-        * Input 
-        * Output
-        * EVENT_OUT
-        * EXTI
-*/
+ * Analog
+ * Input
+ * Output
+ * EVENT_OUT
+ * EXTI
+ */
 void MX_GPIO_Init(void)
 {
 
@@ -249,12 +306,12 @@ void MX_GPIO_Init(void)
 #ifdef USE_FULL_ASSERT
 
 /**
-   * @brief Reports the name of the source file and the source line number
-   * where the assert_param error has occurred.
-   * @param file: pointer to the source file name
-   * @param line: assert_param error line source number
-   * @retval None
-   */
+ * @brief Reports the name of the source file and the source line number
+ * where the assert_param error has occurred.
+ * @param file: pointer to the source file name
+ * @param line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t* file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
@@ -267,11 +324,11 @@ void assert_failed(uint8_t* file, uint32_t line)
 #endif
 
 /**
-  * @}
-  */ 
+ * @}
+ */
 
 /**
-  * @}
-*/ 
+ * @}
+ */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
