@@ -119,15 +119,15 @@ int main(void)
           state++;
           break;
         case 1:
-          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_3 , GPIO_PIN_SET );
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_SET );
           state++;
           break;
         case 2:
-          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_2 , GPIO_PIN_SET );
+          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_2 , GPIO_PIN_SET );
           state++;
           break;
         case 3:
-          HAL_GPIO_WritePin( GPIOA , GPIO_PIN_3 , GPIO_PIN_RESET );
+          HAL_GPIO_WritePin( GPIOB , GPIO_PIN_3 , GPIO_PIN_RESET );
           state=0;
           break;
         }
@@ -136,7 +136,7 @@ int main(void)
       // LED flashing
       flash_c++;
       flash_d = 200-delay + 1;
-      flash_d /= 10;
+      flash_d = flash_d >> 3;
       if(rev){
         if(flash_c >= flash_d){
           HAL_GPIO_TogglePin( GPIOB , GPIO_PIN_4);  // RD
