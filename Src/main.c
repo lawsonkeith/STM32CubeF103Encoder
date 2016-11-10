@@ -32,7 +32,7 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-#define DEADB 47  // a number not in the main array thats not too big!
+#define DEADB 400  // a number not in the main array thats not too big!
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -64,8 +64,8 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   int state=0,rev=0,flash_c=0,delay=0;
-  int delay_d[40] = {0,0,2,2,4,6,8,10,20,30,   40,50,60,70,80,90,100,200,DEADB,DEADB,DEADB,DEADB,200,100,90,80,70,60,50,40,   30,20,10,8,6,4,2,2,0,0};
-  int flash_d = 0;
+  int delay_d[41] = {0,0,2,2,4,6,8,10,20,30,   40,50,60,70,80,90,100,200,200,200,200,200,200,100,90,80,70,60,50,40,   30,20,10,8,6,4,2,2,0,0,0};
+  int deadband;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -89,7 +89,8 @@ int main(void)
   while (1) {
     HAL_Delay(delay);
 
-    if(delay != DEADB)
+    // @@@@ DO AB Output controol
+    if(deadband == 0)
     {
       if(rev) {
         switch(state){
@@ -133,18 +134,17 @@ int main(void)
         }
       }//IF
 
-      // LED flashing
+      // DO LED flashing
       flash_c++;
-      flash_d = 200-delay + 1;
-      flash_d = flash_d >> 3;
+      //flash_d = flash_d >> 3;
       if(rev){
-        if(flash_c >= flash_d){
+        if(flash_c >= 7){
           HAL_GPIO_TogglePin( GPIOB , GPIO_PIN_4);  // RD
           HAL_GPIO_WritePin( GPIOB , GPIO_PIN_5 , GPIO_PIN_RESET );  // GN
           flash_c=0;
         }
       }else{
-        if(flash_c >= flash_d){
+        if(flash_c >= 7){
             HAL_GPIO_TogglePin( GPIOB , GPIO_PIN_5);  // GN
             HAL_GPIO_WritePin( GPIOB , GPIO_PIN_4 , GPIO_PIN_RESET );  // RD
             flash_c=0;
@@ -160,7 +160,7 @@ int main(void)
 
     }
 
-    // ADC DAMPLING
+    // @@@@ ADC DAMPLING
     if (HAL_ADC_Start(&hadc1) != HAL_OK)
     {
       /* Start Conversation Error */
@@ -181,19 +181,24 @@ int main(void)
     }
     HAL_ADC_Stop(&hadc1);
 
-    //Condition ADC into delay array
+    // @@@@ Condition ADC into delay array
     ADCValue /= 100; // 0- 40
     if(ADCValue > 19)
       rev=0;
     else
       rev=1;
     //validate
-    if(ADCValue > 39){
-      ADCValue = 39;
+    if(ADCValue > 40){
+      ADCValue = 40;
     }
     if(ADCValue < 0) {
       ADCValue = 0;
     }
+    if((ADCValue >=19) && (ADCValue <= 21))
+      deadband=1;
+    else
+      deadband=0;
+    // look up ms delay from array
     delay = delay_d[ADCValue];
   }//WHILE
   /* USER CODE END 3 */
