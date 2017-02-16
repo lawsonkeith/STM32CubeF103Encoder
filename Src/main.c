@@ -63,9 +63,10 @@ static void MX_ADC1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  int state=0,rev=0,flash_c=0,delay=0;
-  int delay_d[41] = {0,0,2,2,4,6,8,10,20,30,   40,50,60,70,80,90,100,200,200,200,200,200,200,100,90,80,70,60,50,40,   30,20,10,8,6,4,2,2,0,0,0};
-  int deadband;
+  int state=0,rev=0,flash_c=0,Range;
+  //int delay_d[41] = {0,0,2,2,4,6,8,10,20,30,   40,50,60,70,80,90,100,200,200,200,200,200,200,100,90,80,70,60,50,40,   30,20,10,8,6,4,2,2,0,0,0};
+  long count,delay=0;
+  int deadband=0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -87,9 +88,56 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1) {
-    HAL_Delay(delay);
+    //HAL_Delay(delay);
 
-    // @@@@ DO AB Output controol
+    // @@@@ ADC DAMPLING
+    if (HAL_ADC_Start(&hadc1) != HAL_OK) {
+      /* Start Conversation Error */
+      // Error_Handler();
+    }
+    if (HAL_ADC_PollForConversion(&hadc1, 500) != HAL_OK) {
+      /* End Of Conversion flag not set on time */
+      // Error_Handler();
+      ADCValue=-1;
+    }
+    else {
+      /* ADC conversion completed */
+      /*##-5- Get the converted value of regular channel ########################*/
+      //0-4096
+
+      //deadband?
+      ADCValue = HAL_ADC_GetValue(&hadc1);
+      Range = ADCValue - 2470 + 669/*offset*/;
+      if(abs(Range) < 200)
+        deadband=1;
+      else
+        deadband=0;
+
+      // reverse?
+      if((Range) > 0)
+        rev=0;
+      else
+        rev=1;
+
+      //delay!
+      if(abs(Range) > 200){
+        delay = abs(Range) - 200; // 0-2000
+        delay = 1600 - delay;
+        if(delay<0)
+          delay=0;
+
+        delay*=100;
+      }else{
+        delay = 50;
+      }
+    }
+    HAL_ADC_Stop(&hadc1);
+
+    count=delay;
+    while(count>0)          // delay
+      count--;
+
+    // @@@@ DO AB Output control
     if(deadband == 0)
     {
       if(rev) {
@@ -160,29 +208,9 @@ int main(void)
 
     }
 
-    // @@@@ ADC DAMPLING
-    if (HAL_ADC_Start(&hadc1) != HAL_OK)
-    {
-      /* Start Conversation Error */
-      // Error_Handler();
-    }
-    if (HAL_ADC_PollForConversion(&hadc1, 500) != HAL_OK)
-    {
-      /* End Of Conversion flag not set on time */
-      // Error_Handler();
-      ADCValue=-1;
-    }
-    else
-    {
-      /* ADC conversion completed */
-      /*##-5- Get the converted value of regular channel ########################*/
-      //0-4096
-      ADCValue = HAL_ADC_GetValue(&hadc1);
-    }
-    HAL_ADC_Stop(&hadc1);
 
     // @@@@ Condition ADC into delay array
-    ADCValue /= 100; // 0- 40
+/*    ADCValue /= 100; // 0- 40
     if(ADCValue > 19)
       rev=0;
     else
@@ -199,11 +227,12 @@ int main(void)
     else
       deadband=0;
     // look up ms delay from array
-    delay = delay_d[ADCValue];
+    //delay = delay_d[ADCValue];*/
   }//WHILE
   /* USER CODE END 3 */
 
 }
+
 
 /** System Clock Configuration
  */
@@ -245,23 +274,24 @@ void MX_ADC1_Init(void)
 
   ADC_ChannelConfTypeDef sConfig;
 
-  /**Common config
-   */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  HAL_ADC_Init(&hadc1);
+   /**Common config
+    */
+   hadc1.Instance = ADC1;
+   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+   hadc1.Init.ContinuousConvMode = DISABLE;
+   hadc1.Init.DiscontinuousConvMode = DISABLE;
+   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+   hadc1.Init.NbrOfConversion = 1;
+   HAL_ADC_Init(&hadc1);
 
-  /**Configure Regular Channel
-   */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+   /**Configure Regular Channel
+    */
+   sConfig.Channel = ADC_CHANNEL_0;
+   sConfig.Rank = 1;
+   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+   HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
 
 }
 
@@ -284,7 +314,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin : PA2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -298,7 +328,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : PB4 PB5 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
