@@ -32,7 +32,7 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-#define DEADB 400  // a number not in the main array thats not too big!
+#define DEADB 200  // a number not in the main array thats not too big!
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -64,7 +64,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   int state=0,rev=0,flash_c=0,Range;
-  //int delay_d[41] = {0,0,2,2,4,6,8,10,20,30,   40,50,60,70,80,90,100,200,200,200,200,200,200,100,90,80,70,60,50,40,   30,20,10,8,6,4,2,2,0,0,0};
   long count,delay=0;
   int deadband=0;
   /* USER CODE END 1 */
@@ -108,7 +107,7 @@ int main(void)
       //deadband?
       ADCValue = HAL_ADC_GetValue(&hadc1);
       Range = ADCValue - 2470 + 669/*offset*/;
-      if(abs(Range) < 200)
+      if(abs(Range) < DEADB)
         deadband=1;
       else
         deadband=0;
@@ -120,10 +119,10 @@ int main(void)
         rev=1;
 
       //delay!
-      if(abs(Range) > 200){
-        delay = abs(Range) - 200; // 0-2000
-        delay = 1600 - delay;
-        if(delay<0)
+      if(abs(Range) > DEADB){
+        delay = abs(Range) - DEADB; // 0-2000
+        delay = 1600 - delay;  //1600...(-n)
+        if(delay<0) //1600...0
           delay=0;
 
         delay*=100;
@@ -209,28 +208,9 @@ int main(void)
     }
 
 
-    // @@@@ Condition ADC into delay array
-/*    ADCValue /= 100; // 0- 40
-    if(ADCValue > 19)
-      rev=0;
-    else
-      rev=1;
-    //validate
-    if(ADCValue > 40){
-      ADCValue = 40;
-    }
-    if(ADCValue < 0) {
-      ADCValue = 0;
-    }
-    if((ADCValue >=19) && (ADCValue <= 21))
-      deadband=1;
-    else
-      deadband=0;
-    // look up ms delay from array
-    //delay = delay_d[ADCValue];*/
+  
   }//WHILE
   /* USER CODE END 3 */
-
 }
 
 
